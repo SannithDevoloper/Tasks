@@ -1,0 +1,482 @@
+CREATE TABLE `Company_Profile` (
+  `COMPANY NUMBER` bigint(20) NOT NULL,
+  `COMPANY NAME` varchar(255) DEFAULT NULL,
+  `COMPANY TYPE` varchar(255) DEFAULT NULL,
+  `DATE OF INCORPORATION` date DEFAULT NULL,
+ `COUNTRY OF INCORPORATION` varchar(255) DEFAULT NULL,
+  `WEBSITE` varchar(255) DEFAULT NULL,
+  `EMAIL` varchar(255) DEFAULT NULL,
+          `TELEPHONE` varchar(255) DEFAULT NULL,
+            `SUBSIDIARIES (Y/N)` varchar(255) DEFAULT NULL,
+            `SUBSIDARY COMPANY NUMBERS LIST(comma separated)` varchar(255) DEFAULT NULL,
+            `AUTHORISED REPRESENTATIVE NUMBER` varchar(255) DEFAULT NULL,
+            `AUTHORISED REPRESENTATIVE NAME` varchar(255) DEFAULT NULL,
+              `REGISTERED AGENT NUMBER` bigint(20) DEFAULT NULL,
+                  `REGISTERED AGENT NAME` varchar(255) DEFAULT NULL,
+                                    `CONTRIBUTED CAPITAL` varchar(255) DEFAULT NULL,
+                                     `IMPOSITION CONDITIONS` varchar(255) DEFAULT NULL,
+                                     `RISK RATING` varchar(255) DEFAULT NULL,
+                                       `IMPACT ASSESSMENT` varchar(255) DEFAULT NULL,
+                                              `BUCKET PLACEMENT` varchar(255) DEFAULT NULL,
+                                                    `REGULATORY DEPOSIT` varchar(255) DEFAULT NULL,
+											`DOMESTIC BUSINESS TRUST` varchar(255) DEFAULT NULL,
+                                            `PROFESSIONAL INDEMNITY (Y/N)` varchar(255) DEFAULT NULL,
+                                             `PROFESSIONAL INDEMNITY AMOUNT` varchar(255) DEFAULT NULL,
+											               `ADDITIONAL DETAILS` varchar(255) DEFAULT NULL,
+                                                            `REGISTERED OFFICE ADDRESS 1` varchar(255) DEFAULT NULL,
+                                                             `REGISTERED OFFICE ADDRESS 2` varchar(255) DEFAULT NULL,
+											 `REGISTERED OFFICE ADDRESS CITY` varchar(255) DEFAULT NULL,
+                                              `REGISTERED OFFICE ADDRESS STATE` varchar(255) DEFAULT NULL,
+                                                    `REGISTERED OFFICE ADDRESS COUNTRY` varchar(255) DEFAULT NULL,
+											  `REGISTERED OFFICE ADDRESS ZIPCODE` varchar(255) DEFAULT NULL,
+		
+  
+  PRIMARY KEY (`COMPANY NUMBER`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+const express = require('express')
+const fs = require('fs')
+const path = require('path')
+const bodyparser = require('body-parser')
+const readXlsxFile = require('read-excel-file/node')
+const mysql = require('mysql2')
+const multer = require('multer')
+const app = express()
+app.use(express.static('./public'))
+app.use(bodyparser.json())
+app.use(
+  bodyparser.urlencoded({
+    extended: true,
+  }),
+)
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: 'Sannith_7464',
+  database: 'mysql',
+})
+db.connect(function (err) {
+  if (err) {
+    return console.error('error: ' + err.message)
+  }
+  console.log('Database connected.')
+  
+
+})
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, __dirname + '/uploads/')
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.fieldname + '-' + Date.now() + '-' + file.originalname)
+  },
+})
+const uploadFile = multer({ storage: storage })
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/index.html')
+  res.send('File imported successfully')
+})
+
+app.post('/import-excel', uploadFile.single('import-excel'), (req, res) => {
+  importFileToDb(__dirname + '/uploads/' + req.file.filename)
+   console.log(res)
+})
+function importFileToDb(exFile) {
+  readXlsxFile(exFile).then((rows) => {
+    rows.shift();
+  db.connect((error) => {
+      if (error) {
+        console.error(error)
+      } else {
+        let query = 'INSERT INTO Company_Profile (`COMPANY NUMBER`, `COMPANY NAME`,`COMPANY TYPE`,`DATE OF INCORPORATION`,`COUNTRY OF INCORPORATION`,`WEBSITE`,`EMAIL`,`TELEPHONE`,`SUBSIDIARIES (Y/N)`,`SUBSIDARY COMPANY NUMBERS LIST(comma separated)`,`AUTHORISED REPRESENTATIVE NUMBER`,`AUTHORISED REPRESENTATIVE NAME`,`REGISTERED AGENT NUMBER`,`REGISTERED AGENT NAME`,`CONTRIBUTED CAPITAL`,`IMPOSITION CONDITIONS`,`RISK RATING`,`IMPACT ASSESSMENT`,`BUCKET PLACEMENT`,`REGULATORY DEPOSIT`,`DOMESTIC BUSINESS TRUST`,`PROFESSIONAL INDEMNITY (Y/N)`,`PROFESSIONAL INDEMNITY AMOUNT`,`ADDITIONAL DETAILS`,`REGISTERED OFFICE ADDRESS 1`,`REGISTERED OFFICE ADDRESS 2`,`REGISTERED OFFICE ADDRESS CITY`,`REGISTERED OFFICE ADDRESS STATE`,`REGISTERED OFFICE ADDRESS COUNTRY`,`REGISTERED OFFICE ADDRESS ZIPCODE`) VALUES ?'
+        db.query(query, [rows], (error, response) => {
+          console.log(error || response)
+        })
+      }
+    })
+  })
+}
+let nodeServer = app.listen(4000, function () {
+  let port = nodeServer.address().port
+  let host = nodeServer.address().address
+  console.log('App working on: ', host, port)
+})
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Node js Save Excel Data in MySQL Database Example</title>
+    <meta charset="utf-8" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <form action="/import-excel" enctype="multipart/form-data" method="post">
+        <input
+          type="file"
+          name="import-excel"
+          accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+        />
+        <button type="submit" class="btn btn-dark" value="Store File">submit</button>
+      </form>
+    </div>
+  </body>
+</html>
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+const express = require('express')
+const mysql = require('mysql2')
+const cors = require('cors')
+
+const db = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: 'Sannith_7464',
+    database: 'mysql',
+  })
+  db.connect(function (err) {
+    if (err) {
+      return console.error('error: ' + err.message)
+    }
+    console.log('Database connected.')
+    
+  
+  })
+  const app = express();
+  app.use(cors());
+app.get('/data', function(request, result){
+    db.connect();
+    db.query("SELECT * FROM Company_Profile;", function(err, results, fields){
+         if(err) throw err;
+        result.send(results);
+    })
+    
+})
+app.listen(3000);
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+import {useState,useEffect} from 'react';
+import './App.css';
+import Display from './components/Display';
+// import Pagination from './components/Pagination';
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import { Pagination } from "antd";
+
+function App() {
+  const [Data,setData]=useState([])
+  // const [dataperpage, setDataPerPage] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+
+
+ const [total, setTotal] = useState("");
+
+const [page, setPage] = useState(1);
+
+const [postPerPage, setPostPerPage] = useState(10);
+  useEffect(()=>{
+    const getcategory=async()=>{
+        const res=await fetch('http://localhost:3000/data/')
+        const getdata=await res.json();
+        setData(getdata);
+      
+
+       setTotal(getdata.length);
+    }
+    getcategory();
+},[]);
+  // const pageHandler = (pageNumber) => {
+
+  //   setDataPerPage(Data.slice(pageNumber * 10- 10, pageNumber * 10));
+    
+  //   };
+    const exportPDF = () => {
+      const unit = "pt";
+
+      const size = "A2"; // Use A1, A2, A3 or A4
+
+      const orientation = "portrait"; // portrait or landscape
+
+      const marginLeft = 40;
+
+      const doc = new jsPDF(orientation, unit, size);
+
+      doc.setFontSize(15);
+
+      const title = " Report";
+
+      const headers = [
+        [
+          "Company Number",
+          "Company Name",
+          "Company Type",
+          "DATE OF INCORPORATION",
+          "REGISTERED AGENT NUMBER",
+          "REGISTERED AGENT NAME",
+          "REGISTERED OFFICE ADDRESS 1",
+          "REGISTERED OFFICE ADDRESS 2",
+          "REGISTERED OFFICE ADDRESS CITY",
+          "REGISTERED OFFICE ADDRESS STATE",
+          "REGISTERED OFFICE ADDRESS COUNTRY",
+          "REGISTERED OFFICE ADDRESS ZIPCODE",
+        ],
+      ];
+
+      const data = Data.map((elt) => [
+        elt["COMPANY NUMBER"],
+        elt["COMPANY NAME"],
+        elt["COMPANY TYPE"],
+        elt["DATE OF INCORPORATION"],
+        elt["REGISTERED AGENT NUMBER"],
+        elt["REGISTERED AGENT NAME"],
+        elt["REGISTERED OFFICE ADDRESS 1"],
+        elt["REGISTERED OFFICE ADDRESS 2"],
+        elt["REGISTERED OFFICE ADDRESS CITY"],
+        elt["REGISTERED OFFICE ADDRESS STATE"],
+        elt["REGISTERED OFFICE ADDRESS COUNTRY"],
+        elt["REGISTERED OFFICE ADDRESS ZIPCODE"]
+      ]);
+
+      let content = {
+        startY: 100,
+
+        head: headers,
+
+        body: data,
+      };
+
+      doc.text(title, marginLeft, 40);
+
+      doc.autoTable(content);
+
+      doc.save("report.pdf");
+    };
+    const indexOfLastPage = page + postPerPage;
+
+    const indexOfFirstPage = indexOfLastPage - postPerPage;
+
+    const currentPosts = Data.slice(indexOfFirstPage, indexOfLastPage);
+
+    const onShowSizeChange = (current, pageSize) => {
+      setPostPerPage(pageSize);
+      
+    };
+
+    const itemRender = (current, type, originalElement) => {
+      if (type === "prev") {
+        return <button className='btn-success'>previous</button>;
+      }
+
+      if (type === "next") {
+        return <button className='btn-success'>Next</button>;
+      }
+
+      return originalElement;
+    };
+
+  return (
+    <div className="App">
+      <input
+        style={{ borderWidth: "5px", margin: "20px", float: "right" }}
+        type="search"
+        placeholder="search"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+
+      <Display Data={currentPosts} search={searchTerm} />
+      {/* <Pagination data={Data} pageHandler={pageHandler} /> */}
+      <Pagination
+        onChange={(value) => setPage(value)}
+        pageSize={postPerPage}
+        total={total}
+        className={page}
+        showSizeChanger
+        showQuickJumper
+        onShowSizeChange={onShowSizeChange}
+        itemRender={itemRender}
+      />
+      <br/>
+      <div style={{float:'right'}}>
+      <button   className='btn-primary' onClick={exportPDF}>Download As Pdf</button>
+      </div>
+      
+    </div>
+  );
+}
+
+export default App;
+
+
+
+
+
+
+
+const Display=({Data,search})=>{
+    
+   
+    return(
+      
+        <div>
+          
+      
+         <table className="table table-hover">
+          
+         <thead style={{textAlign:'center'}}>
+           <tr  className="table-active" style={{ color: "green" }}>
+             <th scope="col">Company Number</th>
+             <th scope="col">COMPANY NAME</th>
+             <th scope="col">COMPANY TYPE</th>
+             <th scope="col">DATE OF INCORPORATION</th>
+             {/* <th scope="col">WEBSITE</th>
+             <th scope="col">EMAIL</th>
+             <th scope="col">TELEPHONE</th>
+             <th scope="col">SUBSIDIARIES (Y/N)</th>
+             <th scope="col">SUBSIDARY COMPANY NUMBERS LIST(comma separated)</th>
+             <th scope="col">AUTHORISED REPRESENTATIVE NUMBER</th>
+             <th scope="col">AUTHORISED REPRESENTATIVE NAME</th> */}
+             <th scope="col">REGISTERED AGENT NUMBER</th>
+             <th scope="col">REGISTERED AGENT NAME</th>
+             {/* <th scope="col">CONTRIBUTED CAPITAL</th>
+             <th scope="col">IMPOSITION CONDITIONS</th>
+             <th scope="col">RISK RATING</th>
+             <th scope="col">IMPACT ASSESSMENT</th>
+             <th scope="col">BUCKET PLACEMENT</th>
+             <th scope="col">REGULATORY DEPOSIT</th>
+             <th scope="col">DOMESTIC BUSINESS TRUST</th>
+             <th scope="col">PROFESSIONAL INDEMNITY (Y/N)</th>
+             <th scope="col">PROFESSIONAL INDEMNITY AMOUNT</th>
+             <th scope="col">ADDITIONAL DETAILS</th> */}
+             <th scope="col">REGISTERED OFFICE ADDRESS 1</th>
+             <th scope="col">REGISTERED OFFICE ADDRESS 2</th>
+             <th scope="col">REGISTERED OFFICE ADDRESS CITY</th>
+             <th scope="col">REGISTERED OFFICE ADDRESS STATE</th>
+             <th scope="col">REGISTERED OFFICE ADDRESS COUNTRY</th>
+             <th scope="col">REGISTERED OFFICE ADDRESS ZIPCODE</th>
+       
+       
+           </tr>
+         </thead>
+         <tbody>
+          {Data.filter((val) => {
+       
+        if (search === "") {
+               return val;
+             } else if (
+              val["COMPANY NUMBER"].toString().includes(search)||
+              val["COMPANY NAME"].toLowerCase().includes(search.toLowerCase()) ||
+              val["COMPANY TYPE"].toLowerCase().includes(search.toLowerCase()) ||
+              val["REGISTERED AGENT NUMBER"].toString().includes(search)||
+              val["REGISTERED AGENT NAME"].toLowerCase().includes(search.toLowerCase())||
+              val["REGISTERED OFFICE ADDRESS 1"].toLowerCase().includes(search.toLowerCase())||
+              val["REGISTERED OFFICE ADDRESS 2"].toLowerCase().includes(search.toLowerCase())||
+              val["REGISTERED OFFICE ADDRESS CITY"].toLowerCase().includes(search.toLowerCase())||
+              val["REGISTERED OFFICE ADDRESS STATE"].toLowerCase().includes(search.toLowerCase())||
+              val["REGISTERED OFFICE ADDRESS COUNTRY"].toLowerCase().includes(search.toLowerCase())
+              //  val["REGISTERED OFFICE ADDRESS ZIPCODE"].includes(search)
+              
+              
+
+               
+               
+               
+             ) {
+               // console.log(search)
+       
+               return val;
+             }
+       }).map((item)=>(
+           <tr key={item[`COMPANY NUMBER`]}>
+               <td>{item[`COMPANY NUMBER`]}</td>
+               <td>{item[`COMPANY NAME`]}</td>
+               <td>{item[`COMPANY TYPE`]}</td>
+               <td>{item[`DATE OF INCORPORATION`]}</td>
+               {/* <td>{item[`WEBSITE`]}</td>
+               <td>{item[`EMAIL`]}</td>
+               <td>{item[`TELEPHONE`]}</td>
+               <td>{item[`SUBSIDIARIES (Y/N)`]}</td>
+               <td>{item[`SUBSIDARY COMPANY NUMBERS LIST(comma separated)`]}</td>
+               <td>{item[`AUTHORISED REPRESENTATIVE NUMBER`]}</td>
+               <td>{item[`AUTHORISED REPRESENTATIVE NAME`]}</td> */}
+               <td>{item[`REGISTERED AGENT NUMBER`]}</td>
+               <td>{item[`REGISTERED AGENT NAME`]}</td>
+               {/* <td>{item[`CONTRIBUTED CAPITAL`]}</td>
+               <td>{item[`IMPOSITION CONDITIONS`]}</td>
+               <td>{item[`RISK RATING`]}</td>
+               <td>{item[`IMPACT ASSESSMENT`]}</td>
+               <td>{item[`BUCKET PLACEMENT`]}</td>
+               <td>{item[`REGULATORY DEPOSIT`]}</td>
+               <td>{item[`DOMESTIC BUSINESS TRUST`]}</td>
+               <td>{item[`PROFESSIONAL INDEMNITY (Y/N)`]}</td>
+               <td>{item[`PROFESSIONAL INDEMNITY AMOUNT`]}</td>
+               <td>{item[`ADDITIONAL DETAILS`]}</td> */}
+               <td>{item[`REGISTERED OFFICE ADDRESS 1`]}</td>
+               <td>{item[`REGISTERED OFFICE ADDRESS 2`]}</td>
+               <td>{item[`REGISTERED OFFICE ADDRESS CITY`]}</td>
+               <td>{item[`REGISTERED OFFICE ADDRESS STATE`]}</td>
+               <td>{item[`REGISTERED OFFICE ADDRESS COUNTRY`]}</td>
+               <td>{item[`REGISTERED OFFICE ADDRESS ZIPCODE`]}</td>
+       
+               </tr>
+          )
+       
+          )}
+          
+         </tbody>
+       </table>
+
+     
+       </div>
+
+    )
+}
+export default Display
+
+
+
+
+
+
+const Pagination = ({ data, pageHandler }) => {
+  const pageNumbers = [];
+
+  for (let i = 1; i <= Math.ceil(data.length / 10); i++) {
+    pageNumbers.push(i);
+  }
+
+  return (
+    <div>
+    
+      {pageNumbers.map((item) => (
+        <div
+          className="btn btn-outline-primary"
+          onClick={() => pageHandler(item)}
+        >
+           {item}
+        </div>
+      ))}
+      
+    </div>
+  );
+};
+
+export default Pagination;
